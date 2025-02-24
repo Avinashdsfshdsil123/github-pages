@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Disease Detection</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        video, canvas { width: 100%; max-width: 400px; }
+        button { padding: 10px; font-size: 16px; margin: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Plant Disease Detection</h1>
+    <video id="video" autoplay></video>
+    <button onclick="captureImage()">Capture Image</button>
+    <canvas id="canvas"></canvas>
+    <p id="diseaseName">Prediction will appear here...</p>
+    <p id="diseaseLink"></p>
+    
+    <script>
+        async function setupCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                document.getElementById('diseaseName').innerText = 'Camera not supported on this device.';
+                return;
+            }
+            try {
+                // Request permissions explicitly
+                const permissions = await navigator.permissions.query({ name: 'camera' });
+                if (permissions.state === 'denied') {
+                    document.getElementById('diseaseName').innerText = 'Camera access denied. Please enable camera permissions.';
+                    return;
+                }
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                document.getElementById('diseaseName').innerText = 'Camera not supported on this device.';
+                return;
+            }
+            try {
+            try {
+            const video = document.getElementById('video');
+                                            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: 'environment' } } }).catch(() => navigator.mediaDevices.getUserMedia({ video: true }));
+            video.srcObject = stream;
+            } catch (error) {
+                console.error('Error accessing camera:', error);
+                document.getElementById('diseaseName').innerText = 'Camera access denied. Please allow camera permissions in your browser settings.';
+            }
+        }
+
+        async function captureImage() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            analyzeImage(canvas);
+        }
+
+        async function analyzeImage(canvas) {
+            const allowedCategories = ['plant', 'leaf', 'foliage', 'tree'];
+            const model = await mobilenet.load();
+            const img = tf.browser.fromPixels(canvas);
+            const predictions = await model.classify(img);
+            const diseaseName = predictions[0].className;
+            if (!allowedCategories.some(category => diseaseName.toLowerCase().includes(category))) {
+                document.getElementById('diseaseName').innerText = 'No plant or leaf detected.';
+                document.getElementById('diseaseLink').innerHTML = '';
+                return;
+            }
+            document.getElementById('diseaseName').innerText = `Prediction: ${diseaseName} (Confidence: ${(predictions[0].probability * 100).toFixed(2)}%)`;
+            document.getElementById('diseaseLink').innerHTML = `<a href="https://www.google.com/search?q=${encodeURIComponent(diseaseName)}+plant+disease" target="_blank">More about ${diseaseName}</a>`;
+        }
+
+        setupCamera();
+    </script>
+</body>
+</html>
