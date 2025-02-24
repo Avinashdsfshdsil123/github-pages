@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plant Disease Detection</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; }
+        video, canvas { width: 90%; max-width: 400px; }
+        button { padding: 10px; font-size: 16px; margin: 10px; }
+    </style>
+</head>
+<body>
+
+    <h1>Plant Disease Detection</h1>
+
+    <video id="video" autoplay></video>
+    <canvas id="canvas" style="display: none;"></canvas>
+    <br>
+    <button onclick="captureImage()">Capture Image</button>
+    <p id="prediction">Prediction will appear here...</p>
+
+    <script>
+        async function startCamera() {
+            const video = document.getElementById('video');
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+        }
+
+        async function captureImage() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert image to tensor and classify
+            const model = await mobilenet.load();
+            const img = tf.browser.fromPixels(canvas);
+            const prediction = await model.classify(img);
+
+            document.getElementById('prediction').innerText = `Prediction: ${prediction[0].className}`;
+        }
+
+        window.onload = startCamera;
+    </script>
+
+</body>
+</html>
